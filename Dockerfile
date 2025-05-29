@@ -13,6 +13,9 @@ RUN npm install && npm install -g mcp-proxy
 # Copy source code
 COPY . .
 
+# Copy .env file into the container
+COPY .env .env
+
 # Expose MCP proxy port
 EXPOSE 8080
 
