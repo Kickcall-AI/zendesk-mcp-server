@@ -1,5 +1,4 @@
 import axios from 'axios';
-import fs from 'fs';
 
     class ZendeskClient {
       constructor() {
@@ -9,7 +8,6 @@ import fs from 'fs';
         
 
         if (!this.subdomain || !this.email || !this.apiToken) {
-          fs.appendFileSync('debug.log', `ZendeskClient initialized failed with subdomain: ${this.subdomain}\n`);
           console.warn('Zendesk credentials not found in environment variables. Please set ZENDESK_SUBDOMAIN, ZENDESK_EMAIL, and ZENDESK_API_TOKEN.');
         }
       }
@@ -26,7 +24,6 @@ import fs from 'fs';
       async request(method, endpoint, data = null, params = null) {
         try {
           if (!this.subdomain || !this.email || !this.apiToken) {
-            fs.appendFileSync('debug.log', `ZendeskClient request failed with subdomain: ${this.subdomain}\n`);
             throw new Error('Zendesk credentials not configured. Please set environment variables.');
           }
 
@@ -35,7 +32,6 @@ import fs from 'fs';
             'Authorization': this.getAuthHeader(),
             'Content-Type': 'application/json'
           };
-          fs.appendFileSync('debug.log', `Request: ${JSON.stringify({ method, url, headers, data, params })}\n`);
 
           const response = await axios({
             method,
@@ -44,10 +40,8 @@ import fs from 'fs';
             data,
             params
           });
-          fs.appendFileSync('debug.log', `Response: ${JSON.stringify(response.data)}\n`);
           return response.data;
         } catch (error) {
-          fs.appendFileSync('debug.log', `Error: ${error.message}\n`);
           if (error.response) {
             throw new Error(`Zendesk API Error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
           }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import fs from 'fs';
+
     import { zendeskClient } from '../zendesk-client.js';
 
     export const ticketsTools = [
@@ -83,7 +83,6 @@ import fs from 'fs';
               type,
               tags
             };
-            fs.appendFileSync('debug.log', `create_ticket: ${JSON.stringify(ticketData, null, 2)}\n`);
             const result = await zendeskClient.createTicket(ticketData);
             return {
               content: [{ 
@@ -106,6 +105,7 @@ import fs from 'fs';
           id: z.number().describe("Ticket ID to update"),
           subject: z.string().optional().describe("Updated ticket subject"),
           comment: z.string().optional().describe("New comment to add"),
+          author_id: z.number().describe("Author ID for the comment"),
           priority: z.enum(["urgent", "high", "normal", "low"]).optional().describe("Updated ticket priority"),
           status: z.enum(["new", "open", "pending", "hold", "solved", "closed"]).optional().describe("Updated ticket status"),
           assignee_id: z.number().optional().describe("User ID of the new assignee"),
@@ -113,12 +113,18 @@ import fs from 'fs';
           type: z.enum(["problem", "incident", "question", "task"]).optional().describe("Updated ticket type"),
           tags: z.array(z.string()).optional().describe("Updated tags for the ticket")
         },
-        handler: async ({ id, subject, comment, priority, status, assignee_id, group_id, type, tags }) => {
+        handler: async ({ id, subject, comment, author_id, priority, status, assignee_id, group_id, type, tags }) => {
           try {
             const ticketData = {};
 
             if (subject !== undefined) ticketData.subject = subject;
-            if (comment !== undefined) ticketData.comment = { body: comment };
+            if (comment !== undefined) {
+              ticketData.comment = {
+                body: comment,
+                public: true,
+                author_id: author_id
+              };
+            }
             if (priority !== undefined) ticketData.priority = priority;
             if (status !== undefined) ticketData.status = status;
             if (assignee_id !== undefined) ticketData.assignee_id = assignee_id;
@@ -172,12 +178,8 @@ import fs from 'fs';
         },
         handler: async ({ email }) => {
           try {
-            console.error('email', email);
-            fs.appendFileSync('debug.log', `Payload: ${JSON.stringify({ email })}\n`);
             const query = `type:ticket%20requester:${email}`;
-            fs.appendFileSync('debug.log', `Query: ${query}\n`);
             const ticketsResult = await zendeskClient.searchTickets(query);
-            fs.appendFileSync('debug.log', `Tickets Result: ${JSON.stringify({ ticketsResult })}\n`);
             if (!ticketsResult || ticketsResult.count === 0) {
               return {
                 content: [
