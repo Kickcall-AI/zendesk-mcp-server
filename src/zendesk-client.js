@@ -1,4 +1,5 @@
 import axios from 'axios';
+import fs from 'fs';
 
     class ZendeskClient {
       constructor() {
@@ -6,7 +7,9 @@ import axios from 'axios';
         this.email = process.env.ZENDESK_EMAIL;
         this.apiToken = process.env.ZENDESK_API_TOKEN;
         
+
         if (!this.subdomain || !this.email || !this.apiToken) {
+          fs.appendFileSync('debug.log', `ZendeskClient initialized failed with subdomain: ${this.subdomain}\n`);
           console.warn('Zendesk credentials not found in environment variables. Please set ZENDESK_SUBDOMAIN, ZENDESK_EMAIL, and ZENDESK_API_TOKEN.');
         }
       }
@@ -23,6 +26,7 @@ import axios from 'axios';
       async request(method, endpoint, data = null, params = null) {
         try {
           if (!this.subdomain || !this.email || !this.apiToken) {
+            fs.appendFileSync('debug.log', `ZendeskClient request failed with subdomain: ${this.subdomain}\n`);
             throw new Error('Zendesk credentials not configured. Please set environment variables.');
           }
 
@@ -31,6 +35,7 @@ import axios from 'axios';
             'Authorization': this.getAuthHeader(),
             'Content-Type': 'application/json'
           };
+          fs.appendFileSync('debug.log', `Request: ${JSON.stringify({ method, url, headers, data, params })}\n`);
 
           const response = await axios({
             method,
@@ -39,9 +44,10 @@ import axios from 'axios';
             data,
             params
           });
-
+          fs.appendFileSync('debug.log', `Response: ${JSON.stringify(response.data)}\n`);
           return response.data;
         } catch (error) {
+          fs.appendFileSync('debug.log', `Error: ${error.message}\n`);
           if (error.response) {
             throw new Error(`Zendesk API Error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
           }
@@ -68,6 +74,10 @@ import axios from 'axios';
 
       async deleteTicket(id) {
         return this.request('DELETE', `/tickets/${id}.json`);
+      }
+
+      async searchTickets(payload) {
+        return this.request('GET', `/search.json?query=${payload}`);
       }
 
       // Users
