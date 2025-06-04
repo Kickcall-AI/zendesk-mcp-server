@@ -6,6 +6,7 @@ import axios from 'axios';
         this.email = process.env.ZENDESK_EMAIL;
         this.apiToken = process.env.ZENDESK_API_TOKEN;
         
+
         if (!this.subdomain || !this.email || !this.apiToken) {
           console.warn('Zendesk credentials not found in environment variables. Please set ZENDESK_SUBDOMAIN, ZENDESK_EMAIL, and ZENDESK_API_TOKEN.');
         }
@@ -39,7 +40,6 @@ import axios from 'axios';
             data,
             params
           });
-
           return response.data;
         } catch (error) {
           if (error.response) {
@@ -68,6 +68,10 @@ import axios from 'axios';
 
       async deleteTicket(id) {
         return this.request('DELETE', `/tickets/${id}.json`);
+      }
+
+      async searchTickets(payload) {
+        return this.request('GET', `/search.json?query=${payload}`);
       }
 
       // Users

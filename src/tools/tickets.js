@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
     import { zendeskClient } from '../zendesk-client.js';
 
     export const ticketsTools = [
@@ -61,12 +62,14 @@ import { z } from 'zod';
           priority: z.enum(["urgent", "high", "normal", "low"]).optional().describe("Ticket priority"),
           status: z.enum(["new", "open", "pending", "hold", "solved", "closed"]).optional().describe("Ticket status"),
           requester_id: z.number().optional().describe("User ID of the requester"),
+          requester_name: z.string().optional().describe("Name of the requester"),
+          requester_email: z.string().email().optional().describe("Email address of the requester"),
           assignee_id: z.number().optional().describe("User ID of the assignee"),
           group_id: z.number().optional().describe("Group ID for the ticket"),
           type: z.enum(["problem", "incident", "question", "task"]).optional().describe("Ticket type"),
           tags: z.array(z.string()).optional().describe("Tags for the ticket")
         },
-        handler: async ({ subject, comment, priority, status, requester_id, assignee_id, group_id, type, tags }) => {
+        handler: async ({ subject, comment, priority, status, requester_id, requester_name, requester_email, assignee_id, group_id, type, tags }) => {
           try {
             const ticketData = {
               subject,
@@ -74,12 +77,12 @@ import { z } from 'zod';
               priority,
               status,
               requester_id,
+              requester: { name: requester_name, email: requester_email },
               assignee_id,
               group_id,
               type,
               tags
             };
-            
             const result = await zendeskClient.createTicket(ticketData);
             return {
               content: [{ 
@@ -102,6 +105,7 @@ import { z } from 'zod';
           id: z.number().describe("Ticket ID to update"),
           subject: z.string().optional().describe("Updated ticket subject"),
           comment: z.string().optional().describe("New comment to add"),
+          author_id: z.number().describe("Author ID for the comment"),
           priority: z.enum(["urgent", "high", "normal", "low"]).optional().describe("Updated ticket priority"),
           status: z.enum(["new", "open", "pending", "hold", "solved", "closed"]).optional().describe("Updated ticket status"),
           assignee_id: z.number().optional().describe("User ID of the new assignee"),
@@ -109,19 +113,25 @@ import { z } from 'zod';
           type: z.enum(["problem", "incident", "question", "task"]).optional().describe("Updated ticket type"),
           tags: z.array(z.string()).optional().describe("Updated tags for the ticket")
         },
-        handler: async ({ id, subject, comment, priority, status, assignee_id, group_id, type, tags }) => {
+        handler: async ({ id, subject, comment, author_id, priority, status, assignee_id, group_id, type, tags }) => {
           try {
             const ticketData = {};
-            
+
             if (subject !== undefined) ticketData.subject = subject;
-            if (comment !== undefined) ticketData.comment = { body: comment };
+            if (comment !== undefined) {
+              ticketData.comment = {
+                body: comment,
+                public: true,
+                author_id: author_id
+              };
+            }
             if (priority !== undefined) ticketData.priority = priority;
             if (status !== undefined) ticketData.status = status;
             if (assignee_id !== undefined) ticketData.assignee_id = assignee_id;
             if (group_id !== undefined) ticketData.group_id = group_id;
             if (type !== undefined) ticketData.type = type;
             if (tags !== undefined) ticketData.tags = tags;
-            
+
             const result = await zendeskClient.updateTicket(id, ticketData);
             return {
               content: [{ 
@@ -159,5 +169,47 @@ import { z } from 'zod';
             };
           }
         }
+      },
+      {
+        name: 'get_tickets_by_email',
+        description: 'Retrieve Zendesk tickets using requesters email',
+        schema: {
+          email: z.string().email().describe("Requester's email address"),
+        },
+        handler: async ({ email }) => {
+          try {
+            const query = `type:ticket%20requester:${email}`;
+            const ticketsResult = await zendeskClient.searchTickets(query);
+            if (!ticketsResult || ticketsResult.count === 0) {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: `No tickets found for email: ${email}`,
+                  },
+                ],
+                isError: true,
+              };
+            }
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(ticketsResult.results, null, 2),
+                },
+              ],
+            };
+          } catch (error) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Error retrieving tickets: ${error.message}`,
+                },
+              ],
+              isError: true,
+            };
+          }
+        },
       }
     ];
