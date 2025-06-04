@@ -22,5 +22,5 @@ EXPOSE 8080
 # Set environment variables
 ENV NODE_ENV=production
 
-# Start the application with MCP proxy
-CMD ["mcp-proxy", "--endpoint", "0.0.0.0", "--port", "8080", "--server", "sse", "npm", "start"] 
+# Start the application
+CMD ["npm", "start"]
