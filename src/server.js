@@ -36,7 +36,7 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 
           const creds = transportContext[sessionId];
 
-          if (!creds.zendesk_api_token || !creds.zendesk_email || !creds.zendesk_subdomain) {
+          if (!creds.api_key || !creds.email || !creds.subdomain) {
             throw new Error("Missing required Zendesk credentials in request headers");
           }
 
