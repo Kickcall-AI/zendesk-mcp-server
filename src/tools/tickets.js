@@ -65,7 +65,7 @@ import { z } from 'zod';
           requester_name: z.string().optional().describe("Name of the requester"),
           requester_email: z.string().email().optional().describe("Email address of the requester"),
           assignee_id: z.number().optional().describe("User ID of the assignee"),
-          group_id: z.number().optional().describe("Group ID for the ticket"),
+          group_id: z.number().default(20631354).describe("Group ID for the ticket"),
           type: z.enum(["problem", "incident", "question", "task"]).optional().describe("Ticket type"),
           tags: z.array(z.string()).optional().describe("Tags for the ticket")
         },
@@ -108,7 +108,7 @@ import { z } from 'zod';
           author_id: z.number().describe("Author ID for the comment"),
           priority: z.enum(["urgent", "high", "normal", "low"]).optional().describe("Updated ticket priority"),
           status: z.enum(["new", "open", "pending", "hold", "solved", "closed"]).optional().describe("Updated ticket status"),
-          assignee_id: z.number().default(20631354).describe("User ID of the new assignee"),
+          assignee_id: z.number().optional().describe("User ID of the new assignee"),
           group_id: z.number().optional().describe("New group ID for the ticket"),
           type: z.enum(["problem", "incident", "question", "task"]).optional().describe("Updated ticket type"),
           tags: z.array(z.string()).optional().describe("Updated tags for the ticket")
