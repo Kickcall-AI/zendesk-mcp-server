@@ -13,8 +13,6 @@ RUN npm install && npm install -g mcp-proxy
 # Copy source code
 COPY . .
 
-# Copy .env file into the container
-COPY .env .env
 
 # Expose MCP proxy port
 EXPOSE 8080
@@ -22,5 +20,5 @@ EXPOSE 8080
 # Set environment variables
 ENV NODE_ENV=production
 
-# Start the application with MCP proxy
-CMD ["mcp-proxy", "--endpoint", "0.0.0.0", "--port", "8080", "--server", "sse", "npm", "start"] 
+# Start the application
+CMD ["npm", "start"]

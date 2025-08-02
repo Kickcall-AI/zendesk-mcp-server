@@ -1,25 +1,54 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { zendeskClient } from './zendesk-client.js';
-import { ticketsTools } from './tools/tickets.js';
-import { usersTools } from './tools/users.js';
-import { organizationsTools } from './tools/organizations.js';
-import { groupsTools } from './tools/groups.js';
-import { macrosTools } from './tools/macros.js';
-import { viewsTools } from './tools/views.js';
-import { triggersTools } from './tools/triggers.js';
-import { automationsTools } from './tools/automations.js';
-import { searchTools } from './tools/search.js';
-import { helpCenterTools } from './tools/help-center.js';
-import { supportTools } from './tools/support.js';
-import { talkTools } from './tools/talk.js';
-import { chatTools } from './tools/chat.js';
+    import { zendeskClient } from './zendesk-client.js';
+    import { ticketsTools } from './tools/tickets.js';
+    import { usersTools } from './tools/users.js';
+    import { organizationsTools } from './tools/organizations.js';
+    import { groupsTools } from './tools/groups.js';
+    import { macrosTools } from './tools/macros.js';
+    import { viewsTools } from './tools/views.js';
+    import { triggersTools } from './tools/triggers.js';
+    import { automationsTools } from './tools/automations.js';
+    import { searchTools } from './tools/search.js';
+    import { helpCenterTools } from './tools/help-center.js';
+    import { supportTools } from './tools/support.js';
+    import { talkTools } from './tools/talk.js';
+    import { chatTools } from './tools/chat.js';
+    import { transportContext } from './transportContext.js';
 
-// Create an MCP server for Zendesk API
-const server = new McpServer({
-  name: "Zendesk API",
-  version: "1.0.0",
-  description: "MCP Server for interacting with the Zendesk API"
-});
+    // Create an MCP server for Zendesk API
+    const server = new McpServer({
+      name: "Zendesk API",
+      version: "1.0.0",
+      description: "MCP Server for interacting with the Zendesk API"
+    });
+
+    function wrapToolWithApiKey(tool) {
+      return {
+        name: tool.name,
+        schema: tool.schema,
+        description: tool.description,
+        handler: async (params, invocation) => {
+          console.log("Invocation:", invocation.sessionId);
+          const sessionId = invocation.sessionId;
+          if (!sessionId) {
+            throw new Error("Missing session ID in invocation");
+          }
+
+          const creds = transportContext[sessionId];
+
+          if (!creds.api_key || !creds.email || !creds.subdomain) {
+            throw new Error("Missing required Zendesk credentials in request headers");
+          }
+
+          zendeskClient.configureFromCreds(creds);
+
+          return tool.handler(params, {
+            ...invocation,
+            creds: creds
+          });
+        }
+      };
+    }
 
 // Register all tools
 const allTools = [
@@ -38,15 +67,11 @@ const allTools = [
   ...chatTools
 ];
 
-// Register each tool with the server
-allTools.forEach(tool => {
-  server.tool(
-    tool.name,
-    tool.schema,
-    tool.handler,
-    { description: tool.description }
-  );
-});
+    // Register each tool with the server
+    allTools.forEach(tool => {
+      const wrapped = wrapToolWithApiKey(tool);
+      server.tool(wrapped.name, wrapped.schema, wrapped.handler, { description: wrapped.description });
+    });
 
 // Add a resource for Zendesk API documentation
 server.resource(

@@ -65,7 +65,7 @@ import { z } from 'zod';
           requester_name: z.string().optional().describe("Name of the requester"),
           requester_email: z.string().email().optional().describe("Email address of the requester"),
           assignee_id: z.number().optional().describe("User ID of the assignee"),
-          group_id: z.number().optional().describe("Group ID for the ticket"),
+          group_id: z.number().default(20631354).describe("Group ID for the ticket"),
           type: z.enum(["problem", "incident", "question", "task"]).optional().describe("Ticket type"),
           tags: z.array(z.string()).optional().describe("Tags for the ticket")
         },

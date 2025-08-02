@@ -2,14 +2,15 @@ import axios from 'axios';
 
     class ZendeskClient {
       constructor() {
-        this.subdomain = process.env.ZENDESK_SUBDOMAIN;
-        this.email = process.env.ZENDESK_EMAIL;
-        this.apiToken = process.env.ZENDESK_API_TOKEN;
-        
+        this.subdomain = null;
+        this.email = null;
+        this.apiToken = null;
+      }
 
-        if (!this.subdomain || !this.email || !this.apiToken) {
-          console.warn('Zendesk credentials not found in environment variables. Please set ZENDESK_SUBDOMAIN, ZENDESK_EMAIL, and ZENDESK_API_TOKEN.');
-        }
+      configureFromCreds(creds) {
+        this.subdomain = creds.subdomain;
+        this.email = creds.email;
+        this.apiToken = creds.api_key;
       }
 
       getBaseUrl() {
@@ -32,6 +33,7 @@ import axios from 'axios';
             'Authorization': this.getAuthHeader(),
             'Content-Type': 'application/json'
           };
+          console.log("Zendesk request:", { method, url, headers, data, params });
 
           const response = await axios({
             method,
